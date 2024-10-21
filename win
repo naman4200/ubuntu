@@ -1,0 +1,106 @@
+//To write a program to find frequent 2-itemset in given dataset for minimum 
+support count =2.//
+
+
+#include <stdio.h>
+#include <string.h>
+
+#define MAX_ITEMS 100
+#define MAX_TRANSACTIONS 100
+#define MAX_ITEM_NAME 20
+
+typedef struct { char item1[MAX_ITEM_NAME], item2[MAX_ITEM_NAME]; int count; } Itemset;
+
+void find_frequent_2_itemsets(char transactions[][MAX_ITEMS][MAX_ITEM_NAME], int transaction_count, int min_support) {
+    Itemset frequent_itemsets[MAX_ITEMS * MAX_ITEMS] = {0}; 
+    int itemset_count = 0;
+
+    for (int i = 0; i < transaction_count; i++) {
+        for (int j = 0; j < MAX_ITEMS && transactions[i][j][0]; j++) {
+            for (int k = j + 1; k < MAX_ITEMS && transactions[i][k][0]; k++) {
+                int found = 0;
+                for (int l = 0; l < itemset_count; l++) {
+                    if (!strcmp(frequent_itemsets[l].item1, transactions[i][j]) && 
+                        !strcmp(frequent_itemsets[l].item2, transactions[i][k])) {
+                        frequent_itemsets[l].count++;
+                        found = 1; break;
+                    }
+                }
+                if (!found) {
+                    strcpy(frequent_itemsets[itemset_count].item1, transactions[i][j]);
+                    strcpy(frequent_itemsets[itemset_count++].item2, transactions[i][k]);
+                    frequent_itemsets[itemset_count - 1].count = 1;
+                }
+            }
+        }
+    }
+
+    printf("Frequent 2-itemsets (min support %d):\n", min_support);
+    for (int i = 0; i < itemset_count; i++)
+        if (frequent_itemsets[i].count >= min_support)
+            printf("{ %s, %s } : %d\n", frequent_itemsets[i].item1, frequent_itemsets[i].item2, frequent_itemsets[i].count);
+}
+
+int main() {
+    char transactions[MAX_TRANSACTIONS][MAX_ITEMS][MAX_ITEM_NAME] = {
+        {"milk", "bread", "eggs", ""},
+        {"milk", "bread", "", ""},
+        {"milk", "eggs", "", ""},
+        {"bread", "butter", "", ""},
+        {"milk", "bread", "butter", ""},
+        {"bread", "eggs", "", ""}
+    };
+
+    find_frequent_2_itemsets(transactions, 6, 2);
+    return 0;
+}
+
+
+
+//KMeans//
+
+
+
+#include <stdio.h>
+#include <math.h>
+
+typedef struct { double x, y; } Point;
+
+double dist(Point a, Point b) { return sqrt(pow(b.x - a.x, 2) + pow(b.y - a.y, 2)); }
+Point avg(Point pts[], int n) {
+    double sumX = 0, sumY = 0;
+    for (int i = 0; i < n; i++) { sumX += pts[i].x; sumY += pts[i].y; }
+    return (Point){ sumX / n, sumY / n };
+}
+
+int main() {
+    Point pts[] = { {1, 2}, {2, 3}, {3, 4}, {8, 9}, {9, 10}, {10, 11} };
+    Point centroids[] = { pts[0], pts[3] }, clusters[2][6];
+    int n = 6, k = 2, counts[2];
+    int converged;
+
+    do {
+        converged = 1;
+        for (int i = 0; i < k; i++) counts[i] = 0;
+
+        for (int i = 0; i < n; i++) {
+            double d1 = dist(pts[i], centroids[0]), d2 = dist(pts[i], centroids[1]);
+            int c = d1 < d2 ? 0 : 1;
+            clusters[c][counts[c]++] = pts[i];
+        }
+
+        for (int i = 0; i < k; i++) {
+            Point newCentroid = avg(clusters[i], counts[i]);
+            if (dist(centroids[i], newCentroid) > 1e-4) converged = 0;
+            centroids[i] = newCentroid;
+        }
+    } while (!converged);
+
+    for (int i = 0; i < k; i++) {
+        printf("Centroid: (%.2f, %.2f)\nPoints: ", centroids[i].x, centroids[i].y);
+        for (int j = 0; j < counts[i]; j++) printf("(%.2f, %.2f) ", clusters[i][j].x, clusters[i][j].y);
+        printf("\n");
+    }
+
+    return 0;
+}
